@@ -13,10 +13,35 @@ module cfu (
     input  wire [31:0] src1_i,
     input  wire [31:0] src2_i,
     output wire        stall_o,
-    output wire [31:0] rslt_o
+    output reg [31:0] rslt_o
 );
     assign stall_o = 0;
-    assign rslt_o  = (en_i) ? src1_i * src2_i : 0;
+
+    reg [31:0] acc;
+    always @(posedge clk_i) begin
+        if (en_i) begin
+            case (funct3_i)
+            3'b001: acc <= src1_i * src2_i;
+            3'b011: acc <= acc + src1_i * src2_i;
+            default: ;
+            endcase
+            end
+    end
+    
+    always @(*) begin
+        rslt_o = 0;
+        if(en_i) begin
+            case (funct3_i)
+            3'b000: rslt_o = src1_i * src2_i;
+            3'b010: rslt_o = acc;
+            default: ;
+            endcase
+        end
+    end
+
+
+
+// rslt_o 用组合逻辑按 funct3_i 选：000→乘积 / 010→acc / 其他→0或acc
 endmodule
 
 `else
