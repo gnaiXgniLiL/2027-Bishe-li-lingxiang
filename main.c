@@ -12,7 +12,7 @@ static inline int cfu_mul(int a, int b) {
 }
 
 int main() {
-    int a = 7, b = 6;
+    int a = -515479, b = 715777;
 
     int r_cfu = cfu_mul(a, b);   // 走 CFU（你改的 Verilog）
     int r_c   = a * b;           // 走 CPU 自带乘法器（参照）
