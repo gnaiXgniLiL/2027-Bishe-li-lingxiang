@@ -16,8 +16,6 @@
 
 ## 二、最低完成要求
 
-## 二、最低完成要求
-
 - [ ] **Baseline / 基础系统**
   - [ ] 基于 CFU-Proving-Ground 现有 RV32IM 软核建立可运行的实验环境
   - [ ] 实现纯软件 MAC / 卷积 Baseline
@@ -107,8 +105,6 @@ CFU-Proving-Ground 现有 RV32IM 软核
 
 ## 五、当前进展
 
-## 五、当前进展
-
 **当前阶段：**
 
 CFU-Proving-Ground 基础环境已搭建完成，已在 WSL Ubuntu 环境下成功运行项目自带仿真流程，确认现有 RV32IM 软核、CFU 接口及测试环境能够正常工作。目前进入“理解现有 CFU 接口与 Verilog/RTL 代码，并准备实现自定义 MAC”的阶段。
@@ -148,7 +144,22 @@ CFU-Proving-Ground 基础环境已搭建完成，已在 WSL Ubuntu 环境下成�
 
 ## 七、仓库目录说明
 
-...
+本仓库基于开源项目 CFU-Proving-Ground 分叉开发。根目录的 `Makefile`、`cfu.v`、`main.v`、`proc.v`、`top.v`、`app/`、`constr/`、`scripts/` 等均为上游工程原有文件，因构建流程使用相对路径，**保持原位置不动**。
+
+本人毕设材料位于以下新建目录：
+
+| 目录 | 内容 |
+|---|---|
+| `docs/01-topic/` | 题目确认、任务书要求、技术路线 |
+| `docs/02-literature/` | 文献清单、核验报告、阅读卡 |
+| `docs/03-design/` | 系统架构、实验设计 |
+| `experiments/` | 各实验的配置、命令、数据、笔记 |
+| `progress/` | 里程碑、周志、问题记录 |
+| `results/` | 正式实验图表与日志 |
+| `thesis/` | 论文提纲与草稿 |
+| `data/` | 数据说明 |
+
+本人对上游代码的修改集中在 `cfu.v`（自定义 MAC 指令）、`main.c`（测试程序）、`Makefile`、`.gitignore`，可用 `git diff upstream-base..HEAD` 查看全部改动。
 
 ## 八、本人主要贡献
 
