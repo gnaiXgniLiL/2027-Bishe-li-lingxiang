@@ -8,6 +8,7 @@ OBJDUMP := $(HOME)/tools/riscv/rv32ima/bin/riscv32-unknown-elf-objdump
 VIVADO  := vivado
 VPP     := /tools/Xilinx/Vitis/2024.1/bin/v++
 RTLSIM  := verilator
+OPT ?= -Os
 
 TARGET := arty_a7
 # TARGET := cmod_a7
@@ -31,7 +32,7 @@ build:
 
 prog:
 	mkdir -p build
-	$(GCC) -Os -march=rv32im -mabi=ilp32 -nostartfiles -Iapp -Tapp/link.ld -o build/main.elf app/crt0.s app/*.c *.c
+	$(GCC) $(OPT) -march=rv32im -mabi=ilp32 -nostartfiles -Iapp -Tapp/link.ld -o build/main.elf app/crt0.s app/*.c *.c
 	make initf
 
 imem_size =	$(shell grep -oP "\`define\s+IMEM_SIZE\s+\(\K[^)]*" config.vh | bc)

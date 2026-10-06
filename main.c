@@ -2,18 +2,19 @@
 #include "perf.h"
 
 /* ===== CFU 指令封装（与 cfu.v 的 funct3 编码一一对应） ===== */
-static inline int cfu_op(int funct3, int a, int b) {
-    int r;
-    asm volatile (
-        ".insn r 0x0B, %3, 0, %0, %1, %2"
-        : "=r" (r)
-        : "r" (a), "r" (b), "i" (funct3)
-    );
-    return r;
-}
-#define CFU_LOAD(a,b)  cfu_op(1, a, b)   /* acc <= a*b       */
-#define CFU_READ()     cfu_op(2, 0, 0)   /* rslt = acc       */
-#define CFU_MAC(a,b)   cfu_op(3, a, b)   /* acc <= acc + a*b */
+/* funct3 由预处理器直接拼进指令文本（#f3 字符串化），不依赖编译器常量传播，
+   因此 -O0/-Os/-O2 全部可用 */
+#define CFU_OP(f3, a, b) ({ \
+    int r; \
+    asm volatile (".insn r 0x0B, " #f3 ", 0, %0, %1, %2" \
+        : "=r" (r) : "r" (a), "r" (b)); \
+    r; \
+})
+
+#define CFU_MUL(a,b)   CFU_OP(0, a, b)   /* rslt = a*b       */
+#define CFU_LOAD(a,b)  CFU_OP(1, a, b)   /* acc <= a*b       */
+#define CFU_READ()     CFU_OP(2, 0, 0)   /* rslt = acc       */
+#define CFU_MAC(a,b)   CFU_OP(3, a, b)   /* acc <= acc + a*b */
 
 #define N       256   /* 点积维度 */
 #define REPEAT  10    /* 每个版本重复计时次数 */
