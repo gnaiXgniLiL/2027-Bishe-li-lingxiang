@@ -1,61 +1,49 @@
-# EXP01：CFU-Proving-Ground 原始环境与 Verilator 仿真验证
+# Experiment ID
 
-## 1. 实验目的
+EXP-001（对应 metrics.csv 中 EXP-B1）
 
-1. 完整运行 CFU-Proving-Ground 原始项目；
-2. 验证 WSL Ubuntu 开发环境配置正确；
-3. 验证项目自带 Verilator 仿真流程能够正常运行；
-4. 初步确认项目中的 RISC-V 软核、CFU 接口及测试程序能够正常工作。
+## Purpose
 
-## 2. 实验环境
+测量单 MAC CFU 指令相对纯软件在 256 维点积上的加速比；
+验证"每次迭代节省 ≈4 拍（mul FSM 停顿 + add），加速比受未加速部分限制"的预测。
 
-- OS：WSL2 Ubuntu 24.04.3
-- Project：CFU-Proving-Ground
-- Simulator：Verilator
+## Compared with
 
-## 3. 实验步骤
+纯软件 C 循环点积（Baseline），同一份数据、同一测量框架。
 
-### 3.1 获取项目
+## Configuration
 
-```bash
-cfu
-```
+- 维度 N=256，int32；REPEAT=10 夹取，扣空夹开销
+- 优化级别：-O0 / -Os / -O2 三组
+- CFU 版：CFU_LOAD + 255×CFU_MAC + CFU_READ
+- 平台：RVProc + Verilator 5，pg_perf cycle 计数
 
-### 3.2 编译与运行
-```
-make
-```
-结果：编译正确
+## Dataset
 
-```
-make drun
-```
-结果：运行正确
+确定性公式初始化（无随机）：x[i]=(i*7+13)%251-125，w[i]=(i*11+29)%241-120
 
+## Random seed
 
-### 4. 实验结论
+无随机数，固定公式保证完全可复现。
 
-CFU-Proving-Ground 原始环境已成功配置，并完成项目自带 Verilator 仿真流程。当前环境可以正常运行 RISC-V 软件程序及项目自带测试，为后续分析 CFU 接口以及实现自定义 MAC 加速单元提供基础。
+## Command
 
+make OPT=-O0 && make run；make && make run（-Os）；make OPT=-O2 && make run
 
+## Result
 
+正确性逐位一致（c=-23637, cfu=-23637）。
+cycle（单次 avg）：-O0: 7462 vs 6428；-Os: 2825 vs 1798；-O2: 2570 vs 1798
+加速比：1.16 / 1.57 / 1.42
 
+## Conclusion
 
+-Os 下加速比 1.57x，落在预测区间 1.3–1.6 内；逐拍归因与预测一致。
+优化级别越低加速比越趋近 1（绝对节省恒定、相对收益随基础开销缩水，Amdahl 定律）。
+CFU 版在 -Os/-O2 下 cycle 不变（指令序列被 asm volatile 固定），
+编译器优化只帮助软件版，会部分蚕食硬件加速比。
 
+## Problems
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+无（本实验因编译器恰好将地址计算指令调度在 lw 与 CFU 之间，
+未触发 load-use 冒险；该缺陷在 EXP-002 中暴露，见 issues.md #1）。
