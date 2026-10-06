@@ -107,40 +107,39 @@ CFU-Proving-Ground 现有 RV32IM 软核
 
 **当前阶段：**
 
-CFU-Proving-Ground 基础环境已搭建完成，已在 WSL Ubuntu 环境下成功运行项目自带仿真流程，确认现有 RV32IM 软核、CFU 接口及测试环境能够正常工作。目前进入“理解现有 CFU 接口与 Verilog/RTL 代码，并准备实现自定义 MAC”的阶段。
+软件 Baseline 构建阶段。硬件侧已超前完成单 MAC 方案的设计与仿真验证，当前任务是补齐纯软件 Baseline 的 cycle 数据，作为后续所有加速比对比的基准。
 
 **最近完成：**
 
-- [√] 配置 WSL Ubuntu 开发环境
-- [√] 获取并配置 archlab-sciencetokyo/CFU-Proving-Ground 项目
-- [√] 成功运行项目基础仿真
-- [√] 成功运行项目中的随机数字生成/测试界面
-- [√] 确认现有 RV32IM 软核及 CFU 接口可以正常工作
-- [√] 开始学习 Verilog RTL，已完成 HDLBits 基础组合逻辑、向量、模块例化、`always` / `case` 等内容
-- [√] 已具备 Logisim sCPU、寄存器、ALU、控制逻辑等数字系统基础
+- [√] 配置 WSL2 Ubuntu 开发环境，跑通 CFU-Proving-Ground 原始仿真流程
+- [√] Vivado 2026.1 全流程冒烟验证（综合→实现→布线→比特流，0 error，时序收敛）
+- [√] 深入理解 CFU 接口与处理器译码通路（proc.v 中 custom-0 指令的译码与执行路径）
+- [√] 设计四操作自定义 MAC 指令集（funct3 编码：MUL / LOAD / READ / MAC）
+- [√] 完成 cfu.v 四操作 MAC 的 RTL 实现，三组仿真对拍全部通过（单乘、4 维点积含负数、连续两段点积验证装载清场）
+- [√] 完成 17 篇候选文献逐条核验，筛出 12 篇核心文献，完成 6 篇精读阅读卡
+- [√] 完成仓库统一与初始化，以标签 `upstream-base`（commit f3de37a）界定上游与本人贡献边界
 
 **当前问题：**
 
-- [ ] 尚未完全理解 CFU 接口各信号及调用流程
-- [ ] Verilog 语法和 RTL 编码尚不熟练
-- [ ] 尚未系统实现乘法器和 MAC
-- [ ] 尚未实现多周期 MAC 的时序控制与握手
-- [ ] 尚未建立软件 MAC / 卷积 Baseline
-- [ ] 尚未完成自定义 MAC 的 RTL 仿真和正确性验证
+- [ ] 软件 Baseline 尚无 cycle 数据（256 维点积 microbenchmark 与 mac_dot / conv3x3 未运行）
+- [ ] Makefile 的 `prog` 目标写死 `-Os`，做 -O0 / -O2 对照实验需调整
+- [ ] 优化方案（方案 B：多周期 MAC / 单指令多对数 / INT8 packed）尚未设计
 
 **下一步：**
 
-- [ ] 阅读并理解 CFU-Proving-Ground 的 `cfu.v` / CFU 接口及相关调用流程
-- [ ] 补充 Verilog 时序逻辑、寄存器、FSM、乘法器等基础
-- [ ] 实现并验证基础 MAC
-- [ ] 将 MAC 扩展为符合 CFU 接口的多周期自定义功能单元
-- [ ] 建立软件 MAC / 卷积 Baseline
-- [ ] 完成单 MAC CFU 的 RTL 仿真和正确性验证
+- [ ] 运行 microbenchmark：256 维点积，纯 C 循环 vs CFU 指令，perf 计数器各夹 10 次并扣除空夹开销，输出 cycle 数、加速比并逐位对拍
+- [ ] 运行软件 Baseline 正式版：mac_dot(256) + conv3x3（8×8 输入、3×3 核），-O0 / -O2 各一组
+- [ ] 撰写 docs/03-design/experiment_design.md（实验设计文档）
+- [ ] 撰写 Baseline 与问题分析报告
 
 ## 六、主要实验结果
 
 | Experiment | Result | Status |
 | ---------- | ------ | ------ |
+| CFU 单周期乘法指令仿真（funct3=000） | 与纯 C 结果逐位一致 | ✅ 通过 |
+| 四操作 MAC 三组对拍（单乘 / 4维点积含负数 / 连续两段点积） | mul=42 OK，dot4=-16 OK，dot2=13 OK | ✅ 通过 |
+| 软件 Baseline cycle 统计（-O0 / -O2） | — | ⏳ 待测 |
+| CFU 单 MAC vs 软件 Baseline 加速比 | 预测约 1.3–1.6 倍（依据：省 mul 多拍停顿与 add，lw 与循环控制两边相同，受 Amdahl 定律限制） | ⏳ 待测 |
 
 ## 七、仓库目录说明
 
@@ -163,6 +162,14 @@ CFU-Proving-Ground 基础环境已搭建完成，已在 WSL Ubuntu 环境下成�
 
 ## 八、本人主要贡献
 
+### 本人完成的工作
+
+- **自定义 MAC 指令集设计**：基于 RISC-V custom-0 编码空间设计四操作指令（MUL / LOAD / READ / MAC），以 funct3 字段选择操作，软硬件两端约定即指令定义
+- **CFU 硬件实现**：在 `cfu.v` 中实现单周期 MAC 数据通路与累加寄存器，全部操作单周期完成（`stall_o` 恒 0）
+- **验证程序编写**：在 `main.c` 中以内联汇编（`.insn r 0x0B`）封装 CFU 调用，实现 CFU 与纯 C 的逐位对拍测试
+- **构建环境适配**：修改 `Makefile` 适配本地 RISC-V 工具链
+- **文献工作**：候选文献逐条核验（真伪 / 出处 / 年份 / 作者 / DOI），完成 6 篇精读阅读卡
+
 ### 第三方项目与工具
 
 - **CFU-Proving-Ground**：[archlab-sciencetokyo / Kise Lab](https://github.com/archlab-sciencetokyo/CFU-Proving-Ground)，作为本课题的基础实验框架，使用其现有 RV32IM 软核、CFU 接口及相关测试环境。具体来源和许可证信息以项目仓库为准。
@@ -170,10 +177,12 @@ CFU-Proving-Ground 基础环境已搭建完成，已在 WSL Ubuntu 环境下成�
 
 ## 九、参考项目与第三方代码
 
-项目： CFU-Proving-Ground
-URL： https://github.com/archlab-sciencetokyo/CFU-Proving-Ground
-License： MIT License
-项目来源： archlab-sciencetokyo / Science Tokyo
+- 项目：CFU-Proving-Ground
+- URL：https://github.com/archlab-sciencetokyo/CFU-Proving-Ground
+- License：MIT License
+- 项目来源：archlab-sciencetokyo / Science Tokyo
+- 分叉基点：commit f3de37a（仓库标签 `upstream-base`）
+- 本项目修改内容：`cfu.v`（实现自定义 MAC 指令）、`main.c`（测试与 Benchmark 程序）、`Makefile`（本地工具链适配）、`.gitignore`；全部改动可用 `git diff upstream-base..HEAD` 查看
 
 ## 十、环境与复现
 
