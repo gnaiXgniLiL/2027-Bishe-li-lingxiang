@@ -1,1 +1,3 @@
-﻿
+﻿exp_id,kernel,dim,opt_level,version,repeat,total_cycles,avg_cycles,overhead_cycles,speedup_vs_sw
+EXP-B1,dot,256,Os,software_c,10,28257,2825,11,1.00
+EXP-B1,dot,256,Os,cfu_mac,10,17988,1798,11,1.57

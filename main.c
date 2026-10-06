@@ -1,6 +1,7 @@
 #include "util.h"
+#include "perf.h"
 
-/* 通用 CFU 调用：funct3 选择操作（编译期立即数），a/b 为两个操作数 */
+/* ===== CFU 指令封装（与 cfu.v 的 funct3 编码一一对应） ===== */
 static inline int cfu_op(int funct3, int a, int b) {
     int r;
     asm volatile (
@@ -10,42 +11,77 @@ static inline int cfu_op(int funct3, int a, int b) {
     );
     return r;
 }
+#define CFU_LOAD(a,b)  cfu_op(1, a, b)   /* acc <= a*b       */
+#define CFU_READ()     cfu_op(2, 0, 0)   /* rslt = acc       */
+#define CFU_MAC(a,b)   cfu_op(3, a, b)   /* acc <= acc + a*b */
 
-/* 操作编码——与 cfu.v 的 case 一一对应，这份对应关系就是指令定义本身 */
-#define CFU_MUL(a,b)   cfu_op(0, a, b)   /* rslt = a*b        */
-#define CFU_LOAD(a,b)  cfu_op(1, a, b)   /* acc <= a*b        */
-#define CFU_READ()     cfu_op(2, 0, 0)   /* rslt = acc        */
-#define CFU_MAC(a,b)   cfu_op(3, a, b)   /* acc <= acc + a*b  */
+#define N       256   /* 点积维度 */
+#define REPEAT  10    /* 每个版本重复计时次数 */
+
+static int x[N], w[N];
+
+/* 确定性初始化：固定公式，不用 rand，每次运行数据完全相同（可复现） */
+static void init_data(void) {
+    for (int i = 0; i < N; i++) {
+        x[i] = (i *  7 + 13) % 251 - 125;   /* 约 [-125, 125]，含负数 */
+        w[i] = (i * 11 + 29) % 241 - 120;   /* 约 [-120, 120] */
+    }
+}
+
+/* 版本 A：纯软件点积（Baseline，对照组） */
+static int dot_c(const int *a, const int *b) {
+    int s = 0;
+    for (int i = 0; i < N; i++) s += a[i] * b[i];
+    return s;
+}
+
+/* 版本 B：CFU 点积（挑战者） */
+static int dot_cfu(const int *a, const int *b) {
+    CFU_LOAD(a[0], b[0]);                    /* 第一对必须 LOAD：清场纪律 */
+    for (int i = 1; i < N; i++) CFU_MAC(a[i], b[i]);
+    return CFU_READ();
+}
 
 int main(void) {
-    /* 测试1：单乘法（回归测试，确认 funct3=000 没改坏） */
-    int r1 = CFU_MUL(7, 6), c1 = 7 * 6;
-    pg_prints("mul : cfu="); pg_printd(r1);
-    pg_prints(" c=");        pg_printd(c1);
-    pg_prints((r1 == c1) ? " OK\n" : " FAIL\n");
+    init_data();
 
-    /* 测试2：4 维点积（带负数），CFU vs C 对拍 */
-    int x[4] = {3, -5, 7, 2};
-    int w[4] = {4, 6, -2, 8};
+    /* ---- 先验证正确性：结果不对，测速无意义 ---- */
+    int r_c   = dot_c(x, w);
+    int r_cfu = dot_cfu(x, w);
+    pg_prints("check: c="); pg_printd(r_c);
+    pg_prints(" cfu=");     pg_printd(r_cfu);
+    pg_prints((r_c == r_cfu) ? " OK\n" : " FAIL\n");
+    if (r_c != r_cfu) { pg_exit(); return 0; }
 
-    CFU_LOAD(x[0], w[0]);                 /* 第一对必须装载——纪律 */
-    for (int i = 1; i < 4; i++) CFU_MAC(x[i], w[i]);
-    int r2 = CFU_READ();
+    volatile int sink = 0;  /* 接收结果用：防止编译器发现结果没被用、把整个计时循环删掉 */
 
-    int c2 = 0;
-    for (int i = 0; i < 4; i++) c2 += x[i] * w[i];
+    /* ---- 测空夹开销：计时机制自身（MMIO 写+读）花多少拍 ---- */
+    pg_perf_reset();
+    pg_perf_enable();
+    pg_perf_disable();
+    int overhead = (int)pg_perf_cycle();
 
-    pg_prints("dot4: cfu="); pg_printd(r2);
-    pg_prints(" c=");        pg_printd(c2);
-    pg_prints((r2 == c2) ? " OK\n" : " FAIL\n");
+    /* ---- 纯 C 版：夹 10 次取总 cycle ---- */
+    pg_perf_reset();
+    pg_perf_enable();
+    for (int t = 0; t < REPEAT; t++) sink = dot_c(x, w);
+    pg_perf_disable();
+    int cyc_c = (int)pg_perf_cycle() - overhead;
 
-    /* 测试3：紧接第二段点积，验证"装载清场"不受上一段残值影响 */
-    CFU_LOAD(2, 2);
-    CFU_MAC(3, 3);
-    int r3 = CFU_READ(), c3 = 2*2 + 3*3;
-    pg_prints("dot2: cfu="); pg_printd(r3);
-    pg_prints(" c=");        pg_printd(c3);
-    pg_prints((r3 == c3) ? " OK\n" : " FAIL\n");
+    /* ---- CFU 版：同样夹 10 次 ---- */
+    pg_perf_reset();
+    pg_perf_enable();
+    for (int t = 0; t < REPEAT; t++) sink = dot_cfu(x, w);
+    pg_perf_disable();
+    int cyc_cfu = (int)pg_perf_cycle() - overhead;
+
+    /* ---- 输出：总 cycle、单次平均、加速比(×100 打印成整数) ---- */
+    pg_prints("overhead= ");   pg_printd(overhead);          pg_prints("\n");
+    pg_prints("c    total= "); pg_printd(cyc_c);
+    pg_prints(" avg= ");       pg_printd(cyc_c / REPEAT);    pg_prints("\n");
+    pg_prints("cfu  total= "); pg_printd(cyc_cfu);
+    pg_prints(" avg= ");       pg_printd(cyc_cfu / REPEAT);  pg_prints("\n");
+    pg_prints("speedup x100= "); pg_printd(cyc_c * 100 / cyc_cfu); pg_prints("\n");
 
     pg_exit();
     return 0;

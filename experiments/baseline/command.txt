@@ -1,0 +1,3 @@
+git commit: 7a1fe31 (main.c 为 microbenchmark 版本)
+build & run: make run
+注：Makefile prog 目标默认 -Os
