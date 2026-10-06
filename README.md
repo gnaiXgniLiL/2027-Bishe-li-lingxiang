@@ -136,10 +136,10 @@ CFU-Proving-Ground 现有 RV32IM 软核
 
 | Experiment | Result | Status |
 | ---------- | ------ | ------ |
-| CFU 单周期乘法指令仿真（funct3=000） | 与纯 C 结果逐位一致 | ✅ 通过 |
-| 四操作 MAC 三组对拍（单乘 / 4维点积含负数 / 连续两段点积） | mul=42 OK，dot4=-16 OK，dot2=13 OK | ✅ 通过 |
-| 软件 Baseline cycle 统计（-O0 / -O2） | — | ⏳ 待测 |
-| CFU 单 MAC vs 软件 Baseline 加速比 | 预测约 1.3–1.6 倍（依据：省 mul 多拍停顿与 add，lw 与循环控制两边相同，受 Amdahl 定律限制） | ⏳ 待测 |
+| CFU 单周期乘法指令仿真（funct3=000） | 与纯 C 结果逐位一致 | 通过 |
+| 四操作 MAC 三组对拍（单乘 / 4维点积含负数 / 连续两段点积） | mul=42 OK，dot4=-16 OK，dot2=13 OK | 通过 |
+| 软件 Baseline cycle 统计（-O0 / -O2） | — | 待测 |
+| CFU 单 MAC vs 软件 Baseline 加速比 | 预测约 1.3–1.6 倍（依据：省 mul 多拍停顿与 add，lw 与循环控制两边相同，受 Amdahl 定律限制） | 待测 |
 
 ## 七、仓库目录说明
 
@@ -186,4 +186,8 @@ CFU-Proving-Ground 现有 RV32IM 软核
 
 ## 十、环境与复现
 
-Python / MCU / FPGA / OS / 依赖版本等。
+- **OS**：Windows 11 + WSL2 Ubuntu
+- **仿真**：Verilator 5（`make run` 运行仿真并输出结果）
+- **编译**：RISC-V GCC 工具链（随仓库配置，`make prog` 生成程序）
+- **FPGA 综合**：Vivado 2026.1（Windows 原生，Basic Tier 许可证）
+- **目标板卡**：Digilent Nexys A7-100T（xc7a100tcsg324-1），实板验证为拓展目标
