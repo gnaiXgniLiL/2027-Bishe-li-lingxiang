@@ -107,30 +107,35 @@ CFU-Proving-Ground 现有 RV32IM 软核
 
 **当前阶段：**
 
-软件 Baseline 构建阶段。硬件侧已超前完成单 MAC 方案的设计与仿真验证，当前任务是补齐纯软件 Baseline 的 cycle 数据，作为后续所有加速比对比的基准。
+Baseline 已完成（任务 3 达成）。正在撰写实验设计文档与 Baseline 分析报告，
+下一步进入方案 B（优化设计）阶段。
 
 **最近完成：**
 
-- [√] 配置 WSL2 Ubuntu 开发环境，跑通 CFU-Proving-Ground 原始仿真流程
-- [√] Vivado 2026.1 全流程冒烟验证（综合→实现→布线→比特流，0 error，时序收敛）
-- [√] 深入理解 CFU 接口与处理器译码通路（proc.v 中 custom-0 指令的译码与执行路径）
-- [√] 设计四操作自定义 MAC 指令集（funct3 编码：MUL / LOAD / READ / MAC）
-- [√] 完成 cfu.v 四操作 MAC 的 RTL 实现，三组仿真对拍全部通过（单乘、4 维点积含负数、连续两段点积验证装载清场）
-- [√] 完成 17 篇候选文献逐条核验，筛出 12 篇核心文献，完成 6 篇精读阅读卡
-- [√] 完成仓库统一与初始化，以标签 `upstream-base`（commit f3de37a）界定上游与本人贡献边界
+- [√] 配置 WSL2 环境，跑通 CFU-Proving-Ground 仿真流程
+- [√] 设计四操作自定义 MAC 指令集（funct3：MUL/LOAD/READ/MAC），cfu.v RTL 实现
+- [√] 指令级仿真对拍全部通过（单乘、含负数点积、连续两段点积）
+- [√] 软件 Baseline 出数：dot256 与 conv3x3，-O0/-Os/-O2 三级对照，
+      cycle 统计与逐位对拍完成（见下表）
+- [√] 发现并定位上游框架缺陷：custom-0 指令的 load-use 冒险未被停顿逻辑覆盖，
+      已通过预加载+展开结构规避（详见 progress/issues.md）
+- [√] 完成 17 篇候选文献核验、12 篇核心筛选、6 篇精读阅读卡
+- [√] 仓库初始化完成，以标签 `upstream-base`（commit f3de37a）界定贡献边界
 
 **当前问题：**
 
-- [ ] 软件 Baseline 尚无 cycle 数据（256 维点积 microbenchmark 与 mac_dot / conv3x3 未运行）
-- [ ] Makefile 的 `prog` 目标写死 `-Os`，做 -O0 / -O2 对照实验需调整
-- [ ] 优化方案（方案 B：多周期 MAC / 单指令多对数 / INT8 packed）尚未设计
+- [ ] CFU 指令目前带 3 拍 nop 缺陷税，根治需修改 proc.v 的 hazard 逻辑
+- [ ] 方案 B（多周期 MAC / 单指令多对数 / INT8 packed）尚未设计
+- [ ] 尚未接入完整卷积算子层与小型 CNN 端到端推理
+- [ ] Vivado 综合资源/时序数据未出
 
 **下一步：**
 
-- [ ] 运行 microbenchmark：256 维点积，纯 C 循环 vs CFU 指令，perf 计数器各夹 10 次并扣除空夹开销，输出 cycle 数、加速比并逐位对拍
-- [ ] 运行软件 Baseline 正式版：mac_dot(256) + conv3x3（8×8 输入、3×3 核），-O0 / -O2 各一组
 - [ ] 撰写 docs/03-design/experiment_design.md（实验设计文档）
 - [ ] 撰写 Baseline 与问题分析报告
+- [ ] 方案 B 设计：单指令吞多对数以摊薄循环与取指开销
+- [ ] （可选）修复 proc.v load-use 冒险，去除 nop 税
+- [ ] Vivado 综合，出 LUT/FF/DSP/BRAM/Fmax 资源表
 
 ## 六、主要实验结果
 

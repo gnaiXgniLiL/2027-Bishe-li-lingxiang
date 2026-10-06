@@ -1,3 +1,16 @@
-git commit: 7a1fe31 (main.c 为 microbenchmark 版本)
-build & run: make run
-注：Makefile prog 目标默认 -Os
+# Baseline 实验复现命令
+# 仓库 commit：见 git log（exp: conv3x3 三级优化对照完成）
+# 环境：WSL2 Ubuntu + Verilator 5 + riscv32-unknown-elf-gcc
+
+# dot256 microbenchmark（main.c 为 dot 版本时）
+make OPT=-O0 && make run
+make         && make run    # 默认 -Os
+make OPT=-O2 && make run
+
+# conv3x3（main.c 为 conv 版本时）：同上三条
+
+# 注意：
+# 1. make = prog（编译程序）+ build（重新 Verilate，程序映像在此时烧入仿真器）
+#    make run 只执行仿真，不会重新编译——改过程序必须重新 make，不能只 make run
+# 2. OPT 为本人在 Makefile 中添加的参数（原 prog 目标写死 -Os）
+# 3. 输出读取：check 行须全对；avg = 10 次总 cycle 扣空夹开销后的单次均值

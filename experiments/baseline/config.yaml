@@ -1,0 +1,26 @@
+experiment: EXP-B1 / EXP-B2 (baseline)
+date: 2026-10-06
+platform:
+  core: RVProc (CFU-Proving-Ground, RV32IM 5级流水线)
+  simulator: Verilator 5
+  toolchain: riscv32-unknown-elf-gcc
+  cfu: 单周期四操作 MAC (funct3: 000=MUL, 001=LOAD, 010=READ, 011=MAC)
+kernels:
+  dot:
+    dim: 256
+    dtype: int32
+  conv3x3:
+    input: 8x8
+    kernel: 3x3
+    output: 6x6  # valid 卷积，无 padding
+    dtype: int32
+data_init: 确定性公式初始化（禁 rand）：
+  dot:  x[i]=(i*7+13)%251-125, w[i]=(i*11+29)%241-120
+  conv: img[i]=(i*7+13)%251-125, kern[i]=(i*11+29)%241-120
+measurement:
+  counter: pg_perf (MMIO 0x40000000, 64-bit cycle counter)
+  method: 每版本夹 10 次取总 cycle，减空夹开销，除以 10 得单次均值
+  opt_levels: [-O0, -Os, -O2]
+correctness: CFU 结果与纯 C 参考逐位对拍，不一致则不计时
+known_issue: custom-0 load-use 冒险（见 issues.md），CFU 版采用预加载+展开结构规避，
+  CFU_OP 宏含 3 nop 保险

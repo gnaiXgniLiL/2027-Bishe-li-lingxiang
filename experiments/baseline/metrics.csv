@@ -5,3 +5,9 @@ EXP-B1,dot,256,Os,software_c,10,28257,2825,11,1.00
 EXP-B1,dot,256,Os,cfu_mac,10,17988,1798,11,1.57
 EXP-B1,dot,256,O2,software_c,10,25706,2570,11,1.00
 EXP-B1,dot,256,O2,cfu_mac,10,17988,1798,11,1.42
+EXP-B2,conv3x3,8x8k3,O0,software_c,10,168729,16872,19,1.00
+EXP-B2,conv3x3,8x8k3,O0,cfu_mac_preload,10,80529,8052,19,2.09
+EXP-B2,conv3x3,8x8k3,Os,software_c,10,53118,5311,11,1.00
+EXP-B2,conv3x3,8x8k3,Os,cfu_mac_preload,10,20688,2068,11,2.56
+EXP-B2,conv3x3,8x8k3,O2,software_c,10,49448,4944,11,1.00
+EXP-B2,conv3x3,8x8k3,O2,cfu_mac_preload,10,20638,2063,11,2.39
