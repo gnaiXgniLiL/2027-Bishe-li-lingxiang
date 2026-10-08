@@ -7,10 +7,10 @@
 
 | 目录 | 内容 | 结果 | 状态 |
 |---|---|---|---|
-| `baseline/` | 软件 Baseline 与 CFU 对照的归档数据（metrics.csv / config / command / notes） | dot256 1.57x、conv3x3 2.56x（-Os） | ✅ 完成 |
-| `exp01/` | EXP-001：dot256 microbenchmark，CFU vs 纯软件 | 1.16 / 1.57 / 1.42（-O0/-Os/-O2） | ✅ 完成 |
-| `exp02/` | EXP-002：conv3x3（8x8, 3x3），CFU 预加载+展开版 | 2.09 / 2.56 / 2.39（-O0/-Os/-O2） | ✅ 完成 |
-| `exp03_hazard_probe/` | custom-0 load-use 冒险定位探针（T1–T4） | 确认缺陷，隔 1 条指令即正确 | ✅ 完成（归档） |
+| `baseline/` | 软件 Baseline 与 CFU 对照的归档数据（metrics.csv / config / command / notes） | dot256 1.57x、conv3x3 2.56x（-Os） |  完成 |
+| `exp01/` | EXP-001：dot256 microbenchmark，CFU vs 纯软件 | 1.16 / 1.57 / 1.42（-O0/-Os/-O2） |  完成 |
+| `exp02/` | EXP-002：conv3x3（8x8, 3x3），CFU 预加载+展开版 | 2.09 / 2.56 / 2.39（-O0/-Os/-O2） |  完成 |
+| `exp03_hazard_probe/` | custom-0 load-use 冒险定位探针（T1–T4） | 确认缺陷，隔 1 条指令即正确 |  完成（归档） |
 
 ## 规范
 
