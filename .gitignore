@@ -11,3 +11,5 @@ vitis/
 cfu/
 vitis-comp.json
 .vscode/
+backup/
+*.back

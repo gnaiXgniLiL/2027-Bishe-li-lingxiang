@@ -15,3 +15,13 @@
 - 实验设计文档 experiment_design.md
 - Baseline 与问题分析报告
 - 方案 B 设计讨论
+
+## 2026-10-26 ~ 2026-10-31
+
+- 环境重建：Ubuntu 22.04 下源码编译 riscv-gnu-toolchain（rv32ima/ilp32）与
+  Verilator 5.052；复测数据与 10 月归档完全一致，可复现性验证完毕。
+- 完成 nop 税四组（后扩展为六组）实验：三档优化 × 有/无 nop，全部 36/36 正确；
+  nop 开销恒 756 cycle/次，并用 minstret/mcycle 分离分析解释了恒定性（30% 被停顿吸收）。
+- 结论：preload+unroll 下软件 nop 冗余，正式进入任务①（proc.v hazard 修复）。
+- 踩坑：git add -A 误将工具链目录加入暂存（已撤回，教训：指名 add）；
+  修改 main.c 后 Verilator 未自动重建导致旧程序复跑（对策：改代码后 rm -rf obj_dir）。

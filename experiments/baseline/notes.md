@@ -69,3 +69,11 @@
 
 
 
+## 2026-10-31 复测与 nop 税实验
+
+环境重建（Ubuntu 22.04，源码编译 riscv-gnu-toolchain rv32ima + Verilator 5.052）后复测
+cfu_mac_preload（3-nop 版）：O0 avg=8052、Os avg=2068、O2 avg=2063，与 10 月归档值
+完全一致。验证了 RTL 仿真 cycle 数与宿主机环境无关，实验可精确复现。
+
+同日在 preload+unroll 结构下测试了无 nop 版本（cfu_mac_preload_nonop），三档均 36/36
+通过，且三档的 nop 开销恒为 756 cycle。详见 experiments/exp02/README.md 的 nop 税分析。
