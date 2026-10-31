@@ -13,3 +13,4 @@ vitis-comp.json
 .vscode/
 backup/
 *.back
+dump.vcd*

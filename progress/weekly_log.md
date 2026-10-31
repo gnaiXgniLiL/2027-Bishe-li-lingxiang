@@ -25,3 +25,5 @@
 - 结论：preload+unroll 下软件 nop 冗余，正式进入任务①（proc.v hazard 修复）。
 - 踩坑：git add -A 误将工具链目录加入暂存（已撤回，教训：指名 add）；
   修改 main.c 后 Verilator 未自动重建导致旧程序复跑（对策：改代码后 rm -rf obj_dir）。
+  
+  根因定位为宏变量遮蔽（波形证据），硬件无 bug，任务① 从"改 proc.v"变更为"修宏+验证"。
