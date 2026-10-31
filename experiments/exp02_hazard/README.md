@@ -89,3 +89,9 @@ preload+unroll 结构已将 load 提前、天然拉开"load→使用"距离，�
    （旧循环结构下无 nop 曾出现 row-freeze）；
 3. 因此下一步为方案 B：修改 proc.v hazard 逻辑（任务①），使无 nop 正确性由硬件保证，
    预期可稳定获得无 nop 性能（Os 档 4.04×）。
+
+
+## 2026-10-31 更新：探针宏同步修复
+
+T1/T2 探针原失败与 issues #1 同因（CFU_OP 宏内 int r 遮蔽循环变量），
+非硬件问题。宏修复（_cfu_ret 改名+去 nop）后，L1 探针零间隔输出全对。
