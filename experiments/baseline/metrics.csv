@@ -14,3 +14,12 @@ EXP-B2,conv3x3,8x8k3,O2,cfu_mac_preload,10,20638,2063,11,2.39
 EXP-B2,conv3x3,8x8k3,O0,cfu_mac_preload_nonop,10,72969,7296,19,2.31
 EXP-B2,conv3x3,8x8k3,Os,cfu_mac_preload_nonop,10,13128,1312,11,4.04
 EXP-B2,conv3x3,8x8k3,O2,cfu_mac_preload_nonop,10,13070,1307,11,3.78
+EXP03,conv3x3,8x8k3,O0,software_c,10,168729,16872,19,1.00
+EXP03,conv3x3,8x8k3,O0,software_c_unrolled,10,83769,8376,19,2.014
+EXP03,conv3x3,8x8k3,O0,cfu_mac_preload_nonop,10,72969,7296,19,2.312
+EXP03,conv3x3,8x8k3,Os,software_c,10,53118,5311,11,1.00
+EXP03,conv3x3,8x8k3,Os,software_c_unrolled,10,23948,2394,11,2.218
+EXP03,conv3x3,8x8k3,Os,cfu_mac_preload_nonop,10,13128,1312,11,4.046
+EXP03,conv3x3,8x8k3,O2,software_c,10,49448,4944,11,1.00
+EXP03,conv3x3,8x8k3,O2,software_c_unrolled,10,18678,1867,11,2.647
+EXP03,conv3x3,8x8k3,O2,cfu_mac_preload_nonop,10,13078,1307,11,3.781

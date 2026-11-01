@@ -66,9 +66,6 @@
 - **后续**：修改 proc.v 的 hazard 逻辑，将 custom-0 纳入 load-use 停顿，
   可去除 nop 税——留作方案 B 阶段的候选工作。
 
-
-
-
 ## 2026-10-31 复测与 nop 税实验
 
 环境重建（Ubuntu 22.04，源码编译 riscv-gnu-toolchain rv32ima + Verilator 5.052）后复测
@@ -77,3 +74,13 @@ cfu_mac_preload（3-nop 版）：O0 avg=8052、Os avg=2068、O2 avg=2063，与 1
 
 同日在 preload+unroll 结构下测试了无 nop 版本（cfu_mac_preload_nonop），三档均 36/36
 通过，且三档的 nop 开销恒为 756 cycle。详见 experiments/exp02/README.md 的 nop 税分析。
+
+## 实验编号说明
+
+- EXP-B1：dot256 软件与 CFU 基线对比。
+- EXP-B2：conv3x3 软件与 CFU 基线对比，包含早期 3nop
+  和后续 nonop 数据。
+- EXP03：conv3x3 三方对比，加入 software_c_unrolled，
+  用于分解软件结构优化收益与 CFU 硬件净收益。
+
+speedup_vs_sw 均以同算子、同优化档的 software_c 为 1.00。

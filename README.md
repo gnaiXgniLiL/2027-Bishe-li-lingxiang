@@ -49,7 +49,8 @@
 
 - [x] **错误或异常情况分析**
   - [x] 软件参考结果与 CFU 结果逐位比对
-  - [x] 分析 RTL 仿真中的功能错误及边界情况（上游 custom-0 load-use 冒险缺陷，详见 progress/issues.md）
+  - [x] 分析 RTL 仿真中的功能错误及边界情况（conv3x3 异常最终定位为 CFU_OP 宏变量遮蔽；
+        经 VCD 波形与分层探针确认，proc.v 无需修改，详见 progress/issues.md）
   - [x] 分析软件与硬件结果不一致的原因
   - [x] 分析不同方案可能存在的性能瓶颈和资源开销
 
@@ -106,23 +107,24 @@ CFU-Proving-Ground 现有 RV32IM 软核
 
 ## 五、当前进展
 
-**当前阶段（2026-10-07 更新）：**
+**当前阶段（2026-10-30 更新）：**
 
-老师布置的五项任务（仓库初始化 / 文献核验 / Baseline 跑通 / 实验设计文档 /
-Baseline 与问题分析报告）已全部完成，11 月底硬节点（软件 Baseline + 单 MAC 仿真）
-提前约两个月达成。2026-10-07 老师检查仓库后给出四项下一阶段任务，
-当前按以下顺序推进：
+老师布置的五项任务（仓库初始化 / 文献核验 / Baseline 跑通 /
+实验设计文档 / Baseline 与问题分析报告）已全部完成。
+后续四项任务的当前状态如下：
 
-1. 修复 proc.v hazard 逻辑、去除 3 nop 保险，重新测量 dot256 + conv3x3；
-2. 补充公平的软件展开版 baseline，定量拆分"软件优化收益"与"硬件收益"；
-3. 完成第一次 Vivado 综合，获取资源（LUT/FF/DSP/BRAM）与 Fmax；
-4. 选定小型 CNN（候选：手工固定权重的极简 CNN / LeNet / 极简 2-conv），
-   至少跑通一层卷积调用 CFU，开始整网 cycle 统计（软件整网 cycle、
-   CFU 整网 cycle、加速比、卷积层占比、Amdahl 分析）。
+1. 任务①已完成：conv3x3 异常根因确认为 CFU_OP 宏变量遮蔽，
+   已完成宏修复与三档验证，proc.v 未修改且无需修改；
+2. 公平的软件展开版 baseline 已完成：
+   新增 C-unrolled，与 CFU 版采用相同预加载和展开结构，
+   已定量拆分软件优化收益与硬件净收益，任务②完成。
+3. 下一项：完成第一次 Vivado 综合，获取 LUT/FF/DSP/BRAM 与 Fmax。
+4. 后续：选定小型 CNN，完成软件整网与 CFU 整网的 cycle 对比、
+   卷积层占比及 Amdahl 分析。
 
-方案 B（优化设计）按老师给定优先级推进：
-① hazard 修复 + 去 nop → ② 单指令多对数 / 累加型批量 MAC → ③ 2 路 MAC 并行
-→ ④ INT8 packed MAC。
+前置任务①②均已完成。方案 B 按以下优先级推进：
+① 单指令多对数 / 累加型批量 MAC → ② 2 路 MAC 并行
+→ ③ INT8 packed MAC。
 
 **最近完成：**
 
@@ -131,20 +133,22 @@ Baseline 与问题分析报告）已全部完成，11 月底硬节点（软件 B
 - [√] 指令级仿真对拍全部通过（单乘、含负数点积、连续两段点积）
 - [√] 软件 Baseline 出数：dot256 与 conv3x3，-O0/-Os/-O2 三级对照，
       cycle 统计与逐位对拍完成（见第六节）
-- [√] 发现并定位上游框架缺陷：custom-0 指令的 load-use 冒险未被停顿逻辑覆盖，
-      已通过预加载+展开结构规避（详见 progress/issues.md）
+- [√] 定位 conv3x3 异常根因：CFU_OP 宏变量遮蔽；
+      通过分层探针、反汇编与 VCD 波形确认，proc.v 无需修改
+      （详见 progress/issues.md）
 - [√] 完成 18 篇候选文献核验（14 篇核实成功）、13 篇核心筛选、6 篇精读阅读卡，
       并按 GB/T 7714-2015 著者-出版年制整理引用格式汇总
 - [√] 仓库初始化完成，以标签 `upstream-base`（commit f3de37a）界定贡献边界
 - [√] 完成实验设计文档 docs/03-design/experiment_design.md（四问框架 + 四类实验矩阵）
 - [√] 完成 Baseline 与问题分析报告（7 页：问题定义、现有方案、环境、
       Baseline 配置、初始结果、主要问题、下一步计划）
+- [√] 完成 nop 税实验：三档下开销恒为 756 cycle/call；
+      明确 nop 只是改变寄存器分配并掩盖软件问题，并非硬件保险
+- [√] 完成 C-naive / C-unrolled / CFU 三方公平对比，
+      定量拆分软件结构优化收益与 CFU 硬件净收益（EXP03）
 
 **当前问题：**
 
-- [ ] CFU 指令目前带 3 拍 nop 税，根治需修改 proc.v 的 hazard 逻辑（下一阶段任务 1）
-- [ ] 现有 Baseline 中 CFU 版使用预加载+展开结构而纯 C 版未展开，
-      加速比混合了软件结构收益与硬件收益，需补软件展开版公平对照（下一阶段任务 2）
 - [ ] 方案 B（批量 MAC / 2 路并行 / INT8 packed）尚未设计
 - [ ] 尚未完成小型 CNN 端到端推理与整网级 cycle 统计
 - [ ] Vivado 综合资源/时序数据未出
@@ -165,14 +169,13 @@ Baseline 与问题分析报告）已全部完成，11 月底硬节点（软件 B
 | CFU 单周期乘法指令仿真（funct3=000） | 与纯 C 结果逐位一致 | 通过 |
 | 四操作 MAC 三组对拍（单乘 / 4维点积含负数 / 连续两段点积） | mul=42 OK，dot4=-16 OK，dot2=13 OK | 通过 |
 | dot256 加速比（-O0 / -Os / -O2） | 1.16× / **1.57×** / 1.42×（纯 C 7462 / 2825 / 2570，CFU 6428 / 1798 / 1798 cycle） | 完成 |
-| conv3x3（8×8,3×3→6×6）加速比（-O0 / -Os / -O2） | 2.09× / **2.56×** / 2.39×（纯 C 16872 / 5311 / 4944，CFU 8052 / 2068 / 2063 cycle） | 完成 |
 | 逐拍归因（dot256） | 1.57× 落在预测区间 1.3–1.6：每迭代省约 4 拍（mul 多拍 FSM 停顿 2~3 拍 + 一条 add），lw 与循环控制两侧相同 | 完成 |
-| conv3x3 超预测分析 | 2.56× 超出预测：预加载+展开结构消除了内层循环控制开销，收益 = MAC 指令节省 + 循环展开节省（待补软件展开版对照定量拆分） | 完成，待补公平对照 |
-| 上游 custom-0 load-use 冒险缺陷定位 | 探针 T1–T4 复现确认，根因定位于 proc.v 的 `If_load_muldiv_use`；已规避（预加载+展开 + 前置 3 nop），待根治 | 已规避 |
-| 去 nop 后重测 dot256 + conv3x3 | — | 待测（下一阶段任务 1） |
-| 软件展开版公平 baseline | — | 待测（下一阶段任务 2） |
-| Vivado 综合（LUT/FF/DSP/BRAM/Fmax） | — | 待测（下一阶段任务 3） |
-| 小型 CNN 整网 cycle（软件 / CFU / 加速比 / 卷积占比 / Amdahl 分析） | — | 待测（下一阶段任务 4） |
+| conv3x3 早期 3nop 对照（-O0 / -Os / -O2） | 2.09× / 2.56× / 2.39×（CFU 8052 / 2068 / 2063 cycle）；保留为历史对照 | 完成 |
+| conv3x3 nonop 复测（-O0 / -Os / -O2） | 2.312× / 4.046× / 3.781×（CFU 7296 / 1312 / 1307 cycle） | 完成 |
+| C-naive / C-unrolled / CFU 三方公平对比（EXP03） | C-unrolled avg=8376 / 2394 / 1867；软件收益 X=2.014 / 2.218 / 2.647；硬件净收益 Y=1.148 / 1.824 / 1.428 | 完成 |
+| conv3x3 异常根因定位 | 原“custom-0 load-use 硬件冒险”判断被推翻；VCD 波形确认根因为 CFU_OP 宏变量遮蔽，proc.v 无需修改 | 已完成 |
+| Vivado 综合（LUT/FF/DSP/BRAM/Fmax） | — | 待测（下一项） |
+| 小型 CNN 整网 cycle（软件 / CFU / 加速比 / 卷积占比 / Amdahl 分析） | — | 待测 |
 
 ## 七、仓库目录说明
 
@@ -185,7 +188,7 @@ Baseline 与问题分析报告）已全部完成，11 月底硬节点（软件 B
 | `docs/01-topic/` | 题目确认、任务书要求、技术路线 |
 | `docs/02-literature/` | 文献清单、核验报告（含引用格式汇总）、阅读卡 |
 | `docs/03-design/` | 系统架构、实验设计（experiment_design.md v1） |
-| `experiments/` | 各实验的配置、命令、数据、笔记（baseline / exp01 / exp02 / exp03_hazard_probe） |
+| `experiments/` | 各实验的配置、命令、数据、笔记（含 baseline、hazard 排查及 exp03_c_unrolled 三方对比） |
 | `progress/` | 里程碑、周志、问题记录 |
 | `results/` | 正式实验图表与日志 |
 | `thesis/` | 论文提纲与草稿（含 Baseline 与问题分析报告） |
@@ -201,7 +204,11 @@ Baseline 与问题分析报告）已全部完成，11 月底硬节点（软件 B
 - **CFU 硬件实现**：在 `cfu.v` 中实现单周期 MAC 数据通路与累加寄存器，全部操作单周期完成（`stall_o` 恒 0）
 - **验证程序编写**：在 `main.c` 中以内联汇编（`.insn r 0x0B`）封装 CFU 调用，实现 CFU 与纯 C 的逐位对拍测试
 - **构建环境适配**：修改 `Makefile` 适配本地 RISC-V 工具链（含 `OPT ?=` 优化级别参数）；CFU_OP 宏改为字符串化以兼容 -O0/-Os/-O2 全优化级
-- **上游缺陷定位**：通过对照实验与探针程序（T1–T4）定位 CFU-Proving-Ground 的 custom-0 load-use 冒险缺陷（proc.v 的 `If_load_muldiv_use` 未将 CFU 纳入消费者侧停顿检测），给出规避方案
+- **软件缺陷定位与硬件排除**：通过分层探针、反汇编和 VCD 波形分析，
+  将 conv3x3 异常定位为 CFU_OP 宏变量遮蔽，排除 proc.v 硬件冒险，
+  完成宏修复及三档回归验证
+- **公平 Baseline 与收益拆解**：新增与 CFU 版具有相同预加载和展开结构的
+  C-unrolled 对照，将总加速比分解为软件优化收益与 CFU 硬件净收益
 - **Baseline 测量方法学**：建立"先预测后实测、先对拍后计时、单变量控制"的实验流程与 pg_perf 计数器测量规范（夹 10 次扣空夹取均值、确定性初始化）
 - **文献工作**：候选文献逐条核验（真伪 / 出处 / 年份 / 作者 / DOI），完成 6 篇精读阅读卡，按 GB/T 7714-2015 著者-出版年制整理引用格式
 
@@ -223,6 +230,9 @@ Baseline 与问题分析报告）已全部完成，11 月底硬节点（软件 B
 
 - **OS**：Windows 11 + WSL2 Ubuntu
 - **仿真**：Verilator 5（`make run` 运行仿真并输出结果）
-- **编译**：RISC-V GCC 工具链（随仓库配置，`make prog` 生成程序；注意：改程序后必须 `make`（prog+build）再 `make run`）
+- **编译**：RISC-V GCC 工具链，支持 `OPT=-O0/-Os/-O2`；
+  修改程序或优化等级后必须执行
+  `rm -rf obj_dir && make OPT=<等级> && make run`，
+  避免 Verilator 复用旧程序映像
 - **FPGA 综合**：Vivado 2026.1（Windows 原生，Basic Tier 许可证）
 - **目标板卡**：Digilent Nexys A7-100T（xc7a100tcsg324-1），实板验证为拓展目标
