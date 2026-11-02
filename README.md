@@ -47,8 +47,8 @@
   - [ ] 完成至少一种明确的硬件优化方案
   - [ ] 比较不同设计方案的性能差异
   - [x] 完成原始设计的首次 Vivado 综合、实现与比特流生成
-  - [x] 统计 160 MHz 和 80 MHz 下的全系统 LUT、FF、DSP、BRAM 数据
-  - [ ] 完成更细粒度的 Fmax 测量
+  - [x] 统计 160／80／85／90 MHz 下的全系统 LUT、FF、DSP、BRAM 数据
+  - [x] 完成粗粒度频率扫描，确定当前时序收敛边界位于 85～90 MHz
   - [ ] 完成 CFU 模块的独立资源统计
   - [ ] 分析硬件资源、时序性能与计算性能之间的权衡
 
@@ -112,11 +112,15 @@ CFU-Proving-Ground 现有 RV32IM 软核
 
 **当前阶段（2026-11-01 更新）：**
 
-当前已完成 C-unrolled 三方收益拆解，并完成原始 CPU＋CFU 设计的首次 Vivado 综合、实现和比特流生成。
+当前已完成 C-unrolled 三方收益拆解，并完成原始 CPU＋CFU 设计的
+160／80／85／90 MHz 四轮 Vivado 实现。
 
-160 MHz 下时序未收敛，WNS 为 −5.026 ns；80 MHz 下时序收敛，WNS 为 +0.045 ns。当前仅证明原始设计在 80 MHz 下满足已给定的时序约束，尚未确定精确 Fmax。
+80 MHz 和 85 MHz 下时序收敛，90 MHz 和 160 MHz 下时序未收敛。
+本次粗粒度扫描确定的时序收敛边界位于 85～90 MHz，85 MHz 为当前
+最高已验证通过频率。四次最差路径均通向 CFU 累加寄存器。
 
-下一阶段将补充频率扫描、XDC 约束检查和 CFU 单独资源统计，再开展关键路径优化。方案 B 按以下优先级推进：
+下一阶段将审查 XDC 约束警告、补充 CFU 单独资源统计，并依据关键路径
+结果开展方案 B 设计。当前仓库时钟配置恢复为 85 MHz。方案 B 按以下优先级推进：
 
 1. 单指令多对数 / 累加型批量 MAC
 2. 2 路 MAC 并行
@@ -136,20 +140,21 @@ CFU-Proving-Ground 现有 RV32IM 软核
 - [x] 完成 nop 税实验：三档下开销恒为 756 cycle/call；明确 nop 只是改变寄存器分配并掩盖软件问题，并非硬件保险
 - [x] 完成 C-naive / C-unrolled / CFU 三方公平对比，定量拆分软件结构优化收益与 CFU 硬件净收益（EXP03）
 - [x] 跑通 Nexys A7 的 Windows 原生 Vivado 构建流程，完成综合、实现和比特流生成
-- [x] 保存 160 MHz 与 80 MHz 两轮 postRoute 资源和时序报告，确认当前最差路径通向 CFU 累加寄存器（EXP04）
+- [x] 保存 160／80／85／90 MHz 四轮 postRoute 资源和时序报告，确定当前时序收敛边界位于 85～90 MHz（EXP04）
+- [x] 确认四轮最差路径均通向 CFU 累加寄存器，为后续乘加组合路径优化提供依据
 
 **当前问题：**
 
 - [ ] 方案 B（批量 MAC / 2 路并行 / INT8 Packed）尚未设计
 - [ ] 尚未完成小型 CNN 端到端推理与整网级 cycle 统计
-- [ ] 当前仅验证 80 MHz 时序收敛，精确 Fmax 尚未确定
+- [ ] 当前时序收敛边界为 85～90 MHz，尚未通过中间频率测试进一步缩小范围
 - [ ] 当前 Vivado 资源数据属于整个 main 顶层，尚未获得 CFU 模块的独立资源数据
 - [ ] XDC 中仍存在时钟约束重复定义、部分端口无匹配等警告，需要进一步审查
 - [ ] 时序报告提示 4 个输出端口未设置 output delay，需要确认其影响
 
 **下一步：**
 
-- [ ] 在保留 160 MHz 和 80 MHz 原始报告的基础上进行更细粒度频率扫描
+- [ ] 根据论文精度需要决定是否补测 87 MHz，或保留 85～90 MHz 的粗粒度结论
 - [ ] 审查 XDC 警告，区分需要修复的约束问题与当前端口裁剪产生的提示
 - [ ] 获取 CFU 模块的层次化资源统计
 - [ ] 根据关键路径结果完成方案 B 设计定稿，并将实验设计文档更新至 v2
@@ -170,9 +175,11 @@ CFU-Proving-Ground 现有 RV32IM 软核
 | conv3x3 nonop 复测（-O0 / -Os / -O2） | 2.312× / 4.046× / 3.781×（CFU 7296 / 1312 / 1307 cycle） | 完成 |
 | C-naive / C-unrolled / CFU 三方公平对比（EXP03） | C-unrolled avg=8376 / 2394 / 1867；软件收益 X=2.014 / 2.218 / 2.647；硬件净收益 Y=1.148 / 1.824 / 1.428 | 完成 |
 | conv3x3 异常根因定位 | 原“custom-0 load-use 硬件冒险”判断被推翻；VCD 波形确认根因为 CFU_OP 宏变量遮蔽，proc.v 无需修改 | 完成 |
-| Vivado 原始设计实现（160 MHz） | LUT=1804，FF=918，DSP=7，BRAM=19；WNS=−5.026 ns，TNS=−386.248 ns，361 个建立时间失败端点 | 时序未收敛 |
-| Vivado 原始设计实现（80 MHz） | LUT=1746，FF=884，DSP=7，BRAM=19；WNS=+0.045 ns，TNS=0，无建立时间失败端点 | 时序收敛 |
-| Fmax 精细测量 | 已完成 160 MHz 和 80 MHz 两个数据点；85 MHz 尚未测试，当前仅确认 80 MHz 可行 | 进行中 |
+| Vivado 原始设计实现（160 MHz） | LUT=1804，FF=918，DSP=7，BRAM=19；WNS=−5.026 ns，361 个建立时间失败端点 | 未收敛 |
+| Vivado 原始设计实现（80 MHz） | LUT=1746，FF=884，DSP=7，BRAM=19；WNS=＋0.045 ns，无失败端点 | 收敛 |
+| Vivado 原始设计实现（85 MHz） | LUT=1753，FF=890，DSP=7，BRAM=19；WNS=＋0.005 ns，无失败端点 | 收敛 |
+| Vivado 原始设计实现（90 MHz） | LUT=1762，FF=909，DSP=7，BRAM=19；WNS=−0.191 ns，6 个建立时间失败端点 | 未收敛 |
+| Fmax 粗粒度扫描 | 85 MHz 通过、90 MHz 失败，当前时序收敛边界位于 85～90 MHz | 首轮完成 |
 | 小型 CNN 整网 cycle（软件 / CFU / 加速比 / 卷积占比 / Amdahl 分析） | — | 待测 |
 
 注：Vivado 资源数据为整个 `main` 顶层设计的统计，包含 CPU、CFU、存储器和时钟模块，不能视为 CFU 单元的独立资源开销。详细原始报告见 `experiments/exp04_vivado_synthesis/reports/`。
@@ -233,8 +240,11 @@ CFU-Proving-Ground 现有 RV32IM 软核
 - **编译**：RISC-V GCC 工具链，支持 `OPT=-O0/-Os/-O2`
 - **FPGA 综合与实现**：Vivado 2026.1（Windows 原生，Basic Tier 许可证）
 - **目标板卡**：Digilent Nexys A7-100T（xc7a100tcsg324-1），实板验证为拓展目标
-- **当前时钟配置**：`config.vh` 中 `CLK_FREQ_MHZ=80`
-
+- **当前时钟配置**：`config.vh` 中 `CLK_FREQ_MHZ=85`，对应当前最高已验证通过的实现频率
+- `experiments/exp04_vivado_synthesis/reports/utilization_impl_85mhz.rpt`
+- `experiments/exp04_vivado_synthesis/reports/timing_impl_85mhz.rpt`
+- `experiments/exp04_vivado_synthesis/reports/utilization_impl_90mhz.rpt`
+- `experiments/exp04_vivado_synthesis/reports/timing_impl_90mhz.rpt`
 ### Verilator 三档复现
 
 修改程序或优化等级后必须完整重建，避免 Verilator 复用旧程序映像：
